@@ -290,7 +290,7 @@ are incorporated in the following procedures:
 |#
 
 #|Exercise 1.21|#
-
+#|
 (define (smallest-divisor n)
   (find-divisor n 2))
 
@@ -308,6 +308,7 @@ are incorporated in the following procedures:
 
 (define (prime? n)
   (= n (smallest-divisor n)))
+|#
 
 #|
 
@@ -322,6 +323,7 @@ are incorporated in the following procedures:
 
 #|Exercise 1.22|#
 
+#|
 (define (timed-prime-test n)
   (newline)
   (display n)
@@ -341,6 +343,7 @@ are incorporated in the following procedures:
         ((<= start end)
          (timed-prime-test start)
          (search-for-primes (+ start 2) end))))
+|#
 
 #|
 
@@ -368,7 +371,6 @@ are incorporated in the following procedures:
 10037 *** 6
 
 > (search-for-primes 100000 100100)
-
 100001
 100003 *** 18
 100005
@@ -399,6 +401,166 @@ are incorporated in the following procedures:
 ; O(n))
 
 |#
+
+#|Exercise 1.23|#
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n)
+         n)
+        ((divides? test-divisor n)
+         test-divisor)
+        (else (find-divisor
+               n
+               (next test-divisor)))))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (next n)
+  (cond ((= n 2) 3)
+        (else (+ n 2))))
+
+#|
+
+> (search-for-primes 1000 1100)
+1001
+1003
+1005
+1007
+1009 *** 2
+1011
+1013 *** 2
+1015
+1017
+1019 *** 2
+
+> (search-for-primes 10000 10100)
+10001
+10003
+10005
+10007 *** 4
+10009 *** 4
+10011
+...
+10035
+10037 *** 4
+
+> (search-for-primes 100000 100100)
+100001
+100003 *** 12
+100005
+...
+100017
+100019 *** 12
+100021
+...
+100041
+100043 *** 11
+
+> (search-for-primes 1000000 1000100)
+1000001
+1000003 *** 36
+1000005
+...
+1000031
+1000033 *** 34
+1000035
+1000037 *** 34
+
+; The observed ratio of the two speeds is 2/3:
+; (modified test-divisor time/original test-divisor time)
+; It does not run near twice as fast. I suspect this is because
+; of the 'if' test in the 'next' procedure which we did not have
+; to do before. However, the times does seem stikk to grow around 
+; the rate of sqrt(10).
+
+|#
+
+#|Exercise 1.24|#
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(define (start-prime-test n start-time)
+  (if (fast-prime? n 3)
+      (report-prime (- (runtime)
+                       start-time))))
+
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(define (search-for-primes start end)
+  (cond ((even? start) (search-for-primes (+ start 1) end))
+        ((<= start end)
+         (timed-prime-test start)
+         (search-for-primes (+ start 2) end))))
+
+#|
+> (search-for-primes 1000 1100)
+1001
+1003
+1005
+1007
+1009 *** 5
+1011
+1013 *** 5
+1015
+1017
+1019 *** 5
+
+> (search-for-primes 10000 10100)
+10001
+10003
+10005
+10007 *** 9
+10009 *** 7
+10011
+...
+10035
+10037 *** 7
+
+> (search-for-primes 100000 100100)
+100001
+100003 *** 8
+100005
+...
+100017
+100019 *** 8
+100021
+...
+100041
+100043 *** 9
+
+> (search-for-primes 1000000 1000100)
+1000001
+1000003 *** 9
+1000005
+...
+1000031
+1000033 *** 9
+1000035
+1000037 *** 8
+
+; Testing a number with twice as many digits (1000037 vs 1019) seems
+; to be approximately twice as slow which supports the idea of O(log n)
+; growth. However for small inputs of n (i.e. 1011), it takes longer
+; than running search-for-primes with primes because we do not receive
+; the efficiency benefits of using successive squaring until the inputs
+; become large.
+
+|#
+
+(define (pow-of-ten n)
+  (fast-expt 10 n))
 
 #|Exercise 1.25
 
