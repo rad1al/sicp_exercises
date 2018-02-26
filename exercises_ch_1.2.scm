@@ -188,13 +188,16 @@ are incorporated in the following procedures:
   
 #|Exercise 1.17|#
 
+#|
 (define (fast-multiply a b)
   (cond ((= b 0)
          0)
         ((even? b)
-         (double (fast-multiply a (halve b))))
+         (fast-multiply (double a) (halve b)))
         (else
          (+ a (fast-multiply a (- b 1))))))
+
+|#
 
 (define (double x)
   (+ x x))
@@ -204,3 +207,330 @@ are incorporated in the following procedures:
 
 (define (halve x)
   (/ x 2))
+
+#|Exercise 1.18|#
+
+(define (fast-multiply a b)
+  (fast-mult-iter a b 0))
+
+(define (fast-mult-iter a b n)
+  (cond ((= b 0)
+         n)
+        ((even? b)
+         (fast-mult-iter (double a) (halve b) n))
+        (else
+         (fast-mult-iter a (- b 1) (+ a n)))))
+
+#|Exercise 1.20|#
+
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
+#|
+; Applicative-order evaluation:
+
+
+> (gcd 206 40)
+(gcd 40 (remainder 206 40))
+(gcd 40 6)
+(gcd 6 (remainder 40 6))
+(gcd 6 4)
+(gcd 4 (remainder 6 4))
+(gcd 4 2)
+(gcd 2 (remainder 4 2))
+(gcd 2 0)
+2 ;There are 4 remainder operations.
+
+; Normal-order evaluation:
+
+> (gcd 206 40)
+
+(if (= 40 0)
+    206
+    (gcd 40 (remainder 206 40)))
+
+(if (= (remainder 206 40) 0) ; <- remainders are evaluated
+    40
+    (gcd (remainder 206 40)
+         (remainder 40 (remainder 206 40))))
+
+(if (= (remainder 40 (remainder 206 40)) 0) ; <- remainders are evaluated
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+         (remainder (remainder 206 40)
+                    (remainder 40 (remainder 206 40)))))
+
+(if (= (remainder (remainder 206 40) ; <- remainders are evaluated
+                  (remainder 40 (remainder 206 40))) ; <- remainders are evaluated
+       0)
+    (gcd (remainder 40 (remainder 206 40) (remainder 40 (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40 (remainder 206 40))))))
+
+(if (= (remainder (remainder 40 (remainder 206 40)) ; <- remainders are evaluated
+                  (remainder (remainder 206 40) ; <- remainders are evaluated
+                             (remainder 40 (remainder 206 40)))) ; <- remainders are evaluated
+       0)
+    (remainder (remainder 206 40) ; <- remainders are evaluated
+               (remainder 40 (remainder 206 40))) ; <- remainders are evaluated
+    (gcd (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40 (remainder 206 40))))
+         (remainder (remainder (remainder 206 40)
+                               (remainder 40 (remainder 206 40)))
+                    (remainder (remainder 40 (remainder 206 40))
+                               (remainder (remainder 206 40)
+                                          (remainder 40
+                                                     (remainder 206)))))))
+
+; The remainder procedure is applied 18 times.
+|#
+
+#|Exercise 1.21|#
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n)
+         n)
+        ((divides? test-divisor n)
+         test-divisor)
+        (else (find-divisor
+               n
+               (+ test-divisor 1)))))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+#|
+
+> (smallest-divisor 199)
+199
+> (smallest-divisor 1999)
+1999
+> (smallest-divisor 19999)
+7
+
+|#
+
+#|Exercise 1.22|#
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(define (start-prime-test n start-time)
+  (if (prime? n)
+      (report-prime (- (runtime)
+                       start-time))))
+
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(define (search-for-primes start end)
+  (cond ((even? start) (search-for-primes (+ start 1) end))
+        ((<= start end)
+         (timed-prime-test start)
+         (search-for-primes (+ start 2) end))))
+
+#|
+
+> (search-for-primes 1000 1100)
+1001
+1003
+1005
+1007
+1009 *** 2
+1011
+1013 *** 3
+1015
+1017
+1019 *** 3
+
+> (search-for-primes 10000 10100)
+10001
+10003
+10005
+10007 *** 6
+10009 *** 6
+10011
+...
+10035
+10037 *** 6
+
+> (search-for-primes 100000 100100)
+
+100001
+100003 *** 18
+100005
+...
+100017
+100019 *** 18
+100021
+...
+100041
+100043 *** 18
+
+
+> (search-for-primes 1000000 1000100)
+1000001
+1000003 *** 58
+1000005
+...
+1000031
+1000033 *** 57
+1000035
+1000037 *** 57
+
+; We can see that each time we multiply the input start number by
+; 10, the average time it takes to check if the number in that vicinity
+; increase by 3 to 3.2 times. Which is roughly the sqrt(10) confirming
+; that this program runs in time proportional to the number of steps
+; required for the computation. (Testing algorithm has order of growth of
+; O(n))
+
+|#
+
+#|Exercise 1.25
+
+(define (expmod base exp m)
+  (remainder (fast-expt base exp) m))
+
+; No, this program will generate a massive number '(fast-expt base exp)'
+; and try to apply the remainder procedure to it, which would be very slow.
+
+|#
+
+#|Exercise 1.26
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder 
+          (* (expmod base (/ exp 2) m)
+             (expmod base (/ exp 2) m))
+          m))
+        (else
+         (remainder 
+          (* base 
+             (expmod base (- exp 1) m))
+          m))))
+
+; The process is changed from O(log n) to O(n) because by using
+; explicit multiplication, Louis will evaluate expmod twice (which
+; will branch out into a binary tree) which removes the advantage we
+; had with the original O(log n) algorithm, since 2^(log n) = n.
+
+|#
+
+
+#|Exercise 1.27|#
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder
+          (square (expmod base (/ exp 2) m))
+         m))
+        (else
+         (remainder
+          (* base (expmod base (- exp 1) m))
+          m))))
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n)
+         (fast-prime? n (- times 1)))
+        (else false)))
+
+
+(define (test-fermat n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (define (test-fermat-iter a)
+    (if (< a n)
+        (if (try-it a)
+            (test-fermat-iter (+ a 1))
+            #f)
+        #t))
+  (test-fermat-iter 1))
+
+#|
+
+> (test-fermat 17)
+#t
+> (test-fermat 561)
+#t
+
+|#
+
+#|Exercise 1.28|#
+
+(define (nontrivial-test x n)
+  (if (and (not (or (= x 1)
+                    (= x (- n 1))))
+           (= 1 (remainder (square x) n)))
+      0
+      x))
+
+#|
+> (nontrivial-test 3 3)
+3
+> (nontrivial-test 25 3)
+0
+> (nontrivial-test 24 3)
+24
+> (nontrivial-test 23 3)
+0
+|#
+
+(define (modified-expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder
+          (square (nontrivial-test (modified-expmod base (/ exp 2) m) m))
+          m))
+        (else
+         (remainder
+          (* base (modified-expmod base (- exp 1) m))
+          m))))
+
+(define (miller-rabin-test n)
+  (define (rand-a n)
+    (+ 1 (random (- n 1))))
+  (define (try-it a)
+    (= (modified-expmod a (- n 1) n) 1))
+  (define (iter a)
+    (cond ((= 0 a)
+           #t)
+          ((try-it (rand-a n))
+           (iter (- a 1)))
+          (else
+           #f)))
+  (iter 20))
+
+#|
+
+> (miller-rabin-test 7)
+#t
+> (miller-rabin-test 13)
+#t
+> (miller-rabin-test 561)
+#f ;This time it's correct.
+> (miller-rabin-test 1105)
+#f ;This is correct.
+|#
