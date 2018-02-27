@@ -131,6 +131,8 @@ Prove that Fib(n) is the closest integer to phi^n/sqrt(5) where
 phi = (1 + sqrt(5))/2. Hint let psi = (1 - sqrt(5))/2 to prove
 Fib(n) = (phi^n - psi^n)/sqrt(5).
 
+See solution in SICP_Exercise_1.13_Proof.pdf
+
 |#
 
 #|Exercises 1.14
@@ -140,6 +142,86 @@ procedure of 1.2.2 in making change for 11 cents.
 
 What are the orders of growth of the space and number of steps used by
 this process as the amount to be changed increases?
+
+|#
+
+(define (count-change amount)
+  (cc amount 5))
+
+(define (cc amount kinds-of-coins)
+  (cond ((= amount 0) 1)
+        ((or (< amount 0)
+             (= kinds-of-coins 0))
+         0)
+        (else
+         (+ (cc amount (- kinds-of-coins 1))
+            (cc (- amount (first-denomination
+                           kinds-of-coins))
+                kinds-of-coins)))))
+
+(define (first-denomination kinds-of-coins)
+  (cond ((= kinds-of-coins 1) 1)
+        ((= kinds-of-coins 2) 5)
+        ((= kinds-of-coins 3) 10)
+        ((= kinds-of-coins 4) 25)
+        ((= kinds-of-coins 5) 50)))
+
+#|
+
+(count-change 11)
+    |
+(cc 11 5) -- (cc -39 5)
+    |    
+(cc 11 4) -- (cc -14 4)
+    |
+(cc 11 3) --------------------------------- (cc 1 3) 
+    |                                           |   \
+(cc 11 2) --------------------- (cc 6 2)    (cc 1 2) (cc -9 3)
+    |                               |           |   \
+(cc 11 1) -----                 (cc 6 1)    (cc 1 1) (cc -4 2)
+    |          |               /    |           |   \
+(cc 11 0)  (cc 10 1)   (cc 6 0) (cc 5 1)    (cc 1 0) (cc 0 1)
+          /    |               /    |
+  (cc 10 0) (cc 9 1)   (cc 5 0) (cc 4 1)
+          /    |               /    | 
+   (cc 9 0) (cc 8 1)   (cc 4 0) (cc 3 1)
+          /    |               /    |
+   (cc 8 0) (cc 7 1)   (cc 3 0) (cc 2 1)
+          /    |               /    |
+   (cc 7 0) (cc 6 1)   (cc 2 0) (cc 1 1)
+          /    |               /    |
+   (cc 6 0) (cc 5 1)   (cc 1 0) (cc 0 1)
+          /    |
+   (cc 5 0) (cc 4 1) 
+          /    | 
+   (cc 4 0) (cc 3 1)
+          /    | 
+   (cc 3 0) (cc 2 1)
+          /    | 
+   (cc 2 0) (cc 1 1)
+          /    | 
+   (cc 1 0) (cc 0 1)
+
+Space is O(n) since the maximum depth is n as the text states:
+
+"In general, the number of steps required by a tree-recursive process
+will be proportional to the number of nodes in the tree, while the space
+required will be proportional to the maximum depth of the tree.
+
+Also, we only need to keep track of the nodes above the current node.
+
+Order of growth is O(n^2) since we can observe:
+
+cc(n,1) = O(n)
+cc(n,2) = cc(n, 1) + cc(n-5, 2)
+There are around n/5 steps for each secondary step like cc(n-5, 2)
+where k = 2 kinds of coins because each call is made with 5 cents
+fewer in the amount argument until we reach a terminal node. This 
+gives us O(n^2) for cc(n,2).
+
+For each additional currency, we raise the power
+appropriately and get O(n^k) for cc(n,k) so our count-change
+procedure should be O(n^5)
 
 |#
 
@@ -220,6 +302,75 @@ are incorporated in the following procedures:
          (fast-mult-iter (double a) (halve b) n))
         (else
          (fast-mult-iter a (- b 1) (+ a n)))))
+
+#|Exercise 1.19
+
+Tpq:
+
+a = bq + aq + ap
+b = bp + aq
+
+; By substitution we can see that the original transformation
+; T is just a special case of Tpq, where p = 0 and q = 1.
+
+a = b(1) + a(1) + a(0)
+a = b + a
+
+b = b(0) + a(1)
+b = a
+
+by substitution of the above back into the transformation:
+
+a = (bp + aq)q + (bq + aq + ap)q + (bq + aq + ap)p
+b = (bp + aq)p + (bq + aq + ap)q
+
+We want to rewrite b in a form where (which is easier to factor than a)
+p' and q' can be computed in terms of q and p:
+
+b
+= (bp + aq)p + (bq + aq + ap)q
+= bpp + apq + bqq + aqq + apq
+= bpp + bqq + 2apq + aqq
+= b(pp + qq) + a(2qp + qq)
+
+This implies p' = (pp + qq) or p^2 + q^2 and q = (2qp + qq) or
+2qp + q^2
+
+Let's check if it works for a:
+
+a2 = (bp + aq)q + (bq + aq + ap)q + (bq + aq + ap)p
+= bpq + aqq + bqq + aqq + apq + bpq + apq + app
+= (bpq + bpq + bqq) + (apq + apq + aqq) + (app + aqq)
+= b(pq + pq + qq) + a(pq + pq + qq) + a(pp + qq)
+= b(2pq + qq) + a(2pq + qq) + a(pp + qq)
+
+It seems to be the case.
+
+|#
+
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+
+(define (fib-iter a b p q count)
+  (cond ((= count 0)
+         b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square p) (square q))
+                   (+ (* 2 q p) (square q))
+                   (/ count 2)))
+        (else
+         (fib-iter (+ (* b q)
+                      (* a q)
+                      (* a p))
+                   (+ (* b p)
+                      (* a q))
+                   p
+                   q
+                   (- count 1)))))
+
+
 
 #|Exercise 1.20|#
 
