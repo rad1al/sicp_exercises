@@ -266,7 +266,7 @@ is evaluated?
 
 The order of growth in space and number of steps is O(log n) or logarithmic.
 
-The exact number of steps required is ceiling(log(a/0.1)/log(3))
+The exact number of steps required is ceiling(log(a/0.1)/log(3)).
 
 |#
 
