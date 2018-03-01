@@ -177,11 +177,40 @@ midpoint (-10,20), (18, -55) should be (4, -17.5)
 
 |#
 
-#|Exercise 2.3|#
+#|Exercise 2.3
 
-(define (square x) (* x x))
+The following procedures assume the rectangles being constructed are
+parallel to the X-axis and Y-axis. 
+|#
 
-(define (make-rectangle p1 p2 p3 p4)
+;;; Distance formula
+
+(define (dist start-point end-point)
+  (define (square x) (* x x))
+  (let ((x1 (x-point start-point))
+        (y1 (y-point start-point))
+        (x2 (x-point end-point))
+        (y2 (y-point end-point)))
+    (sqrt (+ (square (- x2 x1)) (square (- y2 y1))))))
+
+;;; Implement segment-length using distance formula
+
+(define (segment-length line-segment)
+  (let ((a (start-segment line-segment))
+        (b (end-segment line-segment)))
+    (dist a b)))
+
+;> (segment-length (make-segment (make-point 0 0) (make-point 3 4)))
+;5
+
+;;; Procedure make-rectangle-via-points makes a rectangle using 
+;;; 4 points arranged as:
+;;;
+;;; p4 p3
+;;; p1 p2  
+
+
+(define (make-rectangle-via-points p1 p2 p3 p4)
   (cons (cons p1 p2) (cons p3 p4)))
 
 (define (get-p1 rect)
@@ -196,73 +225,81 @@ midpoint (-10,20), (18, -55) should be (4, -17.5)
 (define (get-p4 rect)
   (cdr (cdr rect)))
 
-#|
-(define (length line-segment)
-  (let ((x1 (x-point (start-segment line-segment)))
-        (y1 (y-point (start-segment line-segment)))
-        (x2 (x-point (end-segment line-segment)))
-        (y2 (y-point (end-segment line-segment))))
-    (sqrt (+ (square (- x2 x1)) (square (- y2 y1))))))
+;;; Procedure make-rectangle-2-sides makes a rectangle with two 
+;;; perpendicular sides using make-rectangle-via-points.
+;;; The two sides are a side vertical-segment (d a) and
+;;; horizontal-segment (a b) using the following point positions.
+;;;
+;;; d c
+;;; a b
 
-|#
-(define (length start-point end-point)
-  (let ((x1 (x-point start-point))
-        (y1 (y-point start-point))
-        (x2 (x-point end-point))
-        (y2 (y-point end-point)))
-    (sqrt (+ (square (- x2 x1)) (square (- y2 y1))))))
+(define (make-rectangle-2-sides vertical-segment horizontal-segment)
+  (let ((d (start-segment vertical-segment))
+        (a (end-segment vertical-segment))
+        (b (end-segment horizontal-segment)))
+        ; In the body, derive c = (bx, by + dist(d, a)) 
+    (make-rectangle-via-points a
+                               b
+                               (make-point (x-point b) (+ (y-point b) (dist d a)))
+                               d)))
 
-(define origin (make-point 0 0))
+;;; vertical and horizon side selectors for a rectangle:
 
-(define test-point-e (make-point -3 4))
+(define (vertical-segment rectangle)
+  (make-segment (get-p4 rectangle) (get-p1 rectangle)))
+  
+(define (horizontal-segment rectangle)
+  (make-segment (get-p1 rectangle) (get-p2 rectangle)))
 
-#|
-
-Testing length procedure:
-
-Distance between (0,0) and (-3, 4) -> 5
-
-> (length (make-segment origin test-point-e))
-^ Procedure to work with a line-segment.
-
-> (length origin test-point-e)
-5
-
-|#
+;;; area and perimeter procedures:
 
 (define (perimeter rectangle)
-  (let ((p1 (get-p1 rectangle))
-        (p2 (get-p2 rectangle))
-        (p3 (get-p3 rectangle))
-        (p4 (get-p4 rectangle)))
-    (+ (length p1 p2)
-       (length p2 p3)
-       (length p3 p4)
-       (length p4 p1))))
+  (* 2 (+ (rect-width rectangle)
+          (rect-height rectangle))))
 
 (define (area rectangle)
-  (let ((l (length (get-p1 rectangle)
-                  (get-p2 rectangle)))
-        (w (length (get-p2 rectangle)
-                   (get-p3 rectangle))))
-    (* l w)))
+  (* (rect-width rectangle)
+     (rect-height rectangle)))
 
-(define test-rectangle
-  (let ((p1 (make-point 1 1))
-        (p2 (make-point 6 1))
-        (p3 (make-point 6 10))
-        (p4 (make-point 1 10)))
-  (make-rectangle p1 p2 p3 p4)))
+(define (rect-width rectangle)
+  (segment-length (horizontal-segment rectangle)))
+
+(define (rect-height rectangle)
+  (segment-length (vertical-segment rectangle)))
+
+(define test-rect-with-points (make-rectangle-via-points
+                               (make-point 1 1)
+                               (make-point 6 1)
+                               (make-point 6 10)
+                               (make-point 1 10)))
+
+(define test-rect-with-sides (make-rectangle-2-sides
+                              (make-segment (make-point 1 10)
+                                            (make-point 1 1))
+                              (make-segment (make-point 1 1)
+                                            (make-point 6 1))))
+
 
 
 #|
 
-Tests for rectangle procedures:
+> (area test-rect-with-points)
+45
 
-> (perimeter test-rectangle)
-28 ; correct
+> (area test-rect-with-sides)
+45
 
-> (area test-rectangle)
-45 ; correct
+> (perimeter test-rect-with-points)
+28
+
+> (perimeter test-rect-with-sides)
+28
 
 |#
+
+;;; Find the point p4 of a rectangle where p4 is opposite p2 over the
+;;; diagonal created by p1 and p3. (Implement this later)
+;;; This will allow us to find the area of a rectangle that is rotated
+;;; with only 2 sides known/3 points.
+
+; (define (find-missing-rect-corner p1 p2 p3))
