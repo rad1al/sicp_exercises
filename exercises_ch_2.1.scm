@@ -261,11 +261,31 @@ parallel to the X-axis and Y-axis.
   (* (rect-width rectangle)
      (rect-height rectangle)))
 
+;;; procedures to get width and height of a rectangle
+
 (define (rect-width rectangle)
   (segment-length (horizontal-segment rectangle)))
 
 (define (rect-height rectangle)
   (segment-length (vertical-segment rectangle)))
+
+;;; find-missing-rect-corner finds the point p4 of a rectangle 
+;;; where p4 is the reflection of p2 over the diagonal created by 
+;;; p1 and p3.
+;;;
+;;; It will allow us to find the area of a rectangle with only 2 sides
+;;; known/3 points even if it's rotated.
+
+(define (find-missing-rect-corner p1 p2 p3)
+  (let ((m (midpoint-segment (make-segment p1 p3))))
+    (make-point (+ (x-point m) (- (x-point m) (x-point p2)))
+                (+ (y-point m) (- (y-point m) (y-point p2))))))
+
+(define (make-rectangle-3-corners p1 p2 p3)
+  (let ((p4 (find-missing-rect-corner p1 p2 p3)))
+    (make-rectangle-via-points p1 p2 p3 p4)))
+
+;;; Tests
 
 (define test-rect-with-points (make-rectangle-via-points
                                (make-point 1 1)
@@ -279,9 +299,20 @@ parallel to the X-axis and Y-axis.
                               (make-segment (make-point 1 1)
                                             (make-point 6 1))))
 
+(define test-rect-3-corners
+  (make-rectangle-3-corners (make-point 1 1)
+                            (make-point 1 10)
+                            (make-point 6 10)))
+
+(define test-rotated-rect-3-corners
+  (make-rectangle-3-corners (make-point 0 4)
+                            (make-point 3 0)
+                            (make-point 8.6 4.2)))
 
 
 #|
+
+Running the Tests:
 
 > (area test-rect-with-points)
 45
@@ -295,11 +326,23 @@ parallel to the X-axis and Y-axis.
 > (perimeter test-rect-with-sides)
 28
 
+> (print-point
+ (find-missing-rect-corner (make-point 1 10)
+                           (make-point 6 10)
+                           (make-point 6 1)))
+
+(1.0,1.0)
+
+> (area test-rect-3-corners)
+45.0
+
+> (perimeter test-rect-3-corners)
+28.0
+
+> (area test-rotated-rect-3-corners)
+34.99999999999999
+
+> (perimeter test-rotated-rect-3-corners)
+24.0
+
 |#
-
-;;; Find the point p4 of a rectangle where p4 is opposite p2 over the
-;;; diagonal created by p1 and p3. (Implement this later)
-;;; This will allow us to find the area of a rectangle that is rotated
-;;; with only 2 sides known/3 points.
-
-; (define (find-missing-rect-corner p1 p2 p3))
