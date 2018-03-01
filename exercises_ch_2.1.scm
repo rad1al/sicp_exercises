@@ -109,14 +109,7 @@ is negative.
 (define (average a b)
   (/ (+ a b) 2.0))
 
-(define (make-segment start-point end-point)
-  (cons start-point end-point))
-
-(define (start-segment line-segment)
-  (car line-segment))
-
-(define (end-segment line-segment)
-  (cdr line-segment))
+; - Point -
 
 (define (make-point x y)
   (cons x y))
@@ -127,9 +120,24 @@ is negative.
 (define (y-point point)
   (cdr point))
 
-#|
+(define (print-point p)
+  (newline)
+  (display "(")
+  (display (x-point p))
+  (display ",")
+  (display (y-point p))
+  (display ")"))
 
-|#
+; - Segment -
+
+(define (make-segment start-point end-point)
+  (cons start-point end-point))
+
+(define (start-segment line-segment)
+  (car line-segment))
+
+(define (end-segment line-segment)
+  (cdr line-segment))
 
 (define (midpoint-segment line-segment)
   (let ((x1 (x-point (start-segment line-segment)))
@@ -138,13 +146,7 @@ is negative.
         (y2 (y-point (end-segment line-segment))))
     (make-point (average x1 x2) (average y1 y2))))
 
-(define (print-point p)
-  (newline)
-  (display "(")
-  (display (x-point p))
-  (display ",")
-  (display (y-point p))
-  (display ")"))
+; - Testing -
 
 (define test-point-a (make-point 1 3))
 
@@ -172,5 +174,95 @@ midpoint (-10,20), (18, -55) should be (4, -17.5)
 
 > (print-point (midpoint-segment test-line-segment-c-d))
 (4.0,-17.5) ; correct
+
+|#
+
+#|Exercise 2.3|#
+
+(define (square x) (* x x))
+
+(define (make-rectangle p1 p2 p3 p4)
+  (cons (cons p1 p2) (cons p3 p4)))
+
+(define (get-p1 rect)
+  (car (car rect)))
+
+(define (get-p2 rect)
+  (cdr (car rect)))
+
+(define (get-p3 rect)
+  (car (cdr rect)))
+
+(define (get-p4 rect)
+  (cdr (cdr rect)))
+
+#|
+(define (length line-segment)
+  (let ((x1 (x-point (start-segment line-segment)))
+        (y1 (y-point (start-segment line-segment)))
+        (x2 (x-point (end-segment line-segment)))
+        (y2 (y-point (end-segment line-segment))))
+    (sqrt (+ (square (- x2 x1)) (square (- y2 y1))))))
+
+|#
+(define (length start-point end-point)
+  (let ((x1 (x-point start-point))
+        (y1 (y-point start-point))
+        (x2 (x-point end-point))
+        (y2 (y-point end-point)))
+    (sqrt (+ (square (- x2 x1)) (square (- y2 y1))))))
+
+(define origin (make-point 0 0))
+
+(define test-point-e (make-point -3 4))
+
+#|
+
+Testing length procedure:
+
+Distance between (0,0) and (-3, 4) -> 5
+
+> (length (make-segment origin test-point-e))
+^ Procedure to work with a line-segment.
+
+> (length origin test-point-e)
+5
+
+|#
+
+(define (perimeter rectangle)
+  (let ((p1 (get-p1 rectangle))
+        (p2 (get-p2 rectangle))
+        (p3 (get-p3 rectangle))
+        (p4 (get-p4 rectangle)))
+    (+ (length p1 p2)
+       (length p2 p3)
+       (length p3 p4)
+       (length p4 p1))))
+
+(define (area rectangle)
+  (let ((l (length (get-p1 rectangle)
+                  (get-p2 rectangle)))
+        (w (length (get-p2 rectangle)
+                   (get-p3 rectangle))))
+    (* l w)))
+
+(define test-rectangle
+  (let ((p1 (make-point 1 1))
+        (p2 (make-point 6 1))
+        (p3 (make-point 6 10))
+        (p4 (make-point 1 10)))
+  (make-rectangle p1 p2 p3 p4)))
+
+
+#|
+
+Tests for rectangle procedures:
+
+> (perimeter test-rectangle)
+28 ; correct
+
+> (area test-rectangle)
+45 ; correct
 
 |#
