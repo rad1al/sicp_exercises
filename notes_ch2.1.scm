@@ -81,3 +81,24 @@
 ;(print-rat
 ; (add-rat one-third one-third))
 
+
+#|
+
+(define (make-rat n d)
+  (cons n d))
+
+(define (numer x)
+  (let ((g (gcd (car x) (cdr x))))
+    (/ (car x) g)))
+
+(define (denom x)
+  (let ((g (gcd (car x) (cdr x))))
+    (/ (cdr x) g)))
+
+> (numer (make-rat 3 6))
+1
+> (denom (make-rat 12 14))
+7
+
+|#
+
