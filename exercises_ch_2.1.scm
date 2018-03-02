@@ -470,3 +470,195 @@ compose function where compose f g = f (g x):
 7
 
 |#
+
+#|Exercise 2.7|#
+
+
+
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x)
+                    (lower-bound y))
+                 (+ (upper-bound x)
+                    (upper-bound y))))
+
+(define (positive? x) (>= x 0)) 
+
+(define (negative? x) (< x 0)) 
+
+        
+#|
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x)
+               (lower-bound y)))
+        (p2 (* (lower-bound x)
+               (upper-bound y)))
+        (p3 (* (upper-bound x)
+               (lower-bound y)))
+        (p4 (* (upper-bound x)
+               (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval
+                 (/ 1.0 (upper-bound y))
+                 (/ 1.0 (lower-bound y)))))
+
+|#
+
+
+
+(define (make-interval a b) (cons a b))
+
+(define (lower-bound interval) (car interval))
+
+(define (upper-bound interval) (cdr interval))
+
+
+#|Exercise 2.8|#
+
+
+(define (sub-interval x y)
+  (let ((p1 (- (lower-bound x)
+               (lower-bound y)))
+        (p2 (- (lower-bound x)
+               (upper-bound y)))
+        (p3 (- (upper-bound x)
+               (lower-bound y)))
+        (p4 (- (upper-bound x)
+               (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+#|
+
+> (add-interval (make-interval 5 10) (make-interval 1 2))
+(mcons 6 12)
+
+> (mul-interval (make-interval 5 10) (make-interval 1 2))
+(mcons 5 20)
+
+> (div-interval (make-interval 5 10) (make-interval 1 2))
+(mcons 2.5 10.0)
+
+> (sub-interval (make-interval 5 10) (make-interval 1 2))
+(mcons 3 9)
+
+> (sub-interval (make-interval 1 2) (make-interval 5 10))
+(mcons -9 -3)
+
+|#
+
+#|Exercise 2.9|#
+
+(define (width interval)
+  (/ (+ (lower-bound interval)
+        (upper-bound interval))
+     2))
+
+(define A (make-interval 3 5))
+(define B (make-interval 4 10))
+
+#|
+
+> (width (add-interval A B))
+11
+> (+ (width A) (width B))
+11
+
+> (width (sub-interval A B))
+-3
+> (- (width A) (width B))
+-3
+
+> (width (mul-interval A B))
+31
+> (* (width A) (width B))
+28
+
+> (width (div-interval A B))
+31
+> (/ (width A) (width B))
+28
+
+> (width (div-interval A B))
+0.775
+
+> (/ (width A) (width B))
+0.5714285714285714
+
+|#
+
+#|Exercise 2.10|#
+
+(define (div-interval x y)
+  (if (or (= 0 (upper-bound y))
+          (= 0 (lower-bound y)))
+      (error "Divide by zero error (the interval spans 0)")
+      (mul-interval x
+                    (make-interval
+                    (/ 1.0 (upper-bound y))
+                    (/ 1.0 (lower-bound y))))))
+
+#|
+
+> (div-interval (make-interval 0 0) (make-interval 3 5))
+|#
+
+#|Exercise 2.11|#
+
+(define (mul-interval x y)
+  (let ((x-l (lower-bound x))
+        (x-u (upper-bound x))
+        (y-l (lower-bound y))
+        (y-u (upper-bound y)))
+    (cond ((and (positive? x-l) (positive? y-l))
+           (make-interval (* x-l y-l) (* x-u y-u))) 
+          ((and (positive? x-l) (negative? y-l))
+           (make-interval (* x-u y-l) (* (if (negative? y-u) x-l x-u)
+                                         y-u))) 
+          ((and (negative? x-l) (positive? y-l)) 
+           (make-interval (* x-l y-u) (* x-u
+                                         (if (negative? x-u) y-l y-u)))) 
+          ((and (positive? x-u) (positive? y-u))
+           (make-interval (min (* x-l y-u) (* x-u y-l))
+                          (max (* x-l y-l) (* x-u y-u)))) 
+          ((and (positive? x-u) (negative? y-u)) 
+           (make-interval (* x-u y-l) (* x-l y-l))) 
+          ((and (negative? x-u) (positive? y-u)) 
+           (make-interval (* x-l y-u) (* x-l y-l))) 
+          (else 
+           (make-interval (* x-u y-u) (* x-l y-l))))))
+
+#|Exercise 2.12|#
+
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+
+(define (center i)
+  (/ (+ (lower-bound i) 
+        (upper-bound i)) 
+     2))
+
+(define (make-center-percentage c pct-tol)
+  (let ((tolerance (/ pct-tol 100.0)))
+    (make-interval (- c (abs (* c tolerance)))
+                   (+ c (abs (* c tolerance))))))
+
+(define (percentage-tolerance interval)
+  (let ((c (center interval)))
+    (* (/ (- (upper-bound interval) c) c) 100)))
+
+
+#|
+
+> (make-center-percentage -10 20)
+(mcons -12.0 -8.0)
+
+> (percentage-tolerance (make-interval 2.5 7.5))
+50.0
+
+
+
+|#
