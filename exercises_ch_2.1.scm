@@ -346,3 +346,127 @@ Running the Tests:
 24.0
 
 |#
+
+#|Exercise 2.4
+
+(define (cons x y) 
+  (lambda (m) (m x y)))
+
+(define (car z) 
+  (z (lambda (p q) p)))
+
+> (car (cons 1 2))
+(car (lambda (m) (m 1 2))
+((lambda (m) (m 1 2)) (lambda (p q) p))
+((lambda (p q) p) 1 2)
+1
+
+;;; Procedural procedural definition of cdr : 
+
+(define (cdr z) 
+  (z (lambda (p q) q)))
+
+> (cdr (cons 1 2))
+(cdr (lambda (m) (m 1 2))
+((lambda (m) (m 1 2)) (lambda (p q) q))
+((lambda (p q) q) 1 2)
+2
+
+|#
+
+#|Exercise 2.5
+
+Strategy:
+
+(5,7) can be expressed and stored as 2^5 * 3^7, then to retrieve
+the information for the first digit, we can factor out the 3s to get
+a power of 2 and then take the log base 2 of that result to get 5.
+Do the same thing for the other integer we wish to retrieve.
+
+|#
+
+;; constructor 
+
+(define (pcons a b) (* (expt 2 a) (expt 3 b))) 
+
+;; Procedure which calculates the log of n in base b.
+
+(define (log-in-base base n) (ceiling (/ (log n) (log base))))
+
+;; Procedure to factor out all n's from a number x.
+
+(define (remove-factors x n)
+  (if (= 1 (gcd x n))
+      x
+      (remove-factors (/ x n) n)))
+
+;; Selectors
+
+(define (pcar x) (log-in-base 2 (remove-factors x 3)))
+
+(define (pcdr x) (log-in-base 3 (remove-factors x 2)))
+
+#|
+
+> (pcons 5 7)
+69984
+
+> (pcar (pcons 5 7))
+5.0
+
+> (pcdr (pcons 5 7))
+7.0
+
+|#
+
+#|Exercise 2.6|#
+
+(define zero (lambda (f) (lambda (x) x)))
+
+(define (add-1 n)
+  (lambda (f) (lambda (x) (f ((n f) x)))))
+
+
+(define one (lambda (f) (lambda (x) (f x))))
+
+(define two (lambda (f) (lambda (x) (f (f x)))))
+
+#|
+
+One:
+
+(add-1 zero)
+(lambda (f) (lambda (x) (f ((zero f) x))))
+(lambda (f) (lambda (x) (f x)))
+
+Two:
+
+(add-1 one)
+(lambda (f) (lambda (x) (f ((one f) x))))
+(lambda (f) (lambda (x) (f (f x))))
+
+Three:
+
+(f (f (f x)))
+
+a + b seems to be a function iterated a + b times. Recall the
+compose function where compose f g = f (g x):
+
+
+|#
+
+(define (compose f g) (lambda (x) (f (g x)))) 
+
+
+(define (add a b)
+  (lambda (f) (compose (a f) (b f))))
+
+#|
+
+> ((one inc) 10)
+11
+
+> ((two inc) 5)
+7
+
+|#
