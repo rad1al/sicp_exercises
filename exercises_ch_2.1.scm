@@ -553,40 +553,37 @@ compose function where compose f g = f (g x):
 #|Exercise 2.9|#
 
 (define (width interval)
-  (/ (+ (lower-bound interval)
-        (upper-bound interval))
-     2))
+  (/ (- (upper-bound interval)
+        (lower-bound interval))
+     2.0))
 
 (define A (make-interval 3 5))
 (define B (make-interval 4 10))
 
 #|
 
-> (width (add-interval A B))
-11
 > (+ (width A) (width B))
-11
+4
 
-> (width (sub-interval A B))
--3
-> (- (width A) (width B))
--3
+> (width (add-interval A B))
+4.0
 
-> (width (mul-interval A B))
-31
-> (* (width A) (width B))
-28
+> (+ (width A) (width B))
+4.0
 
-> (width (div-interval A B))
-31
-> (/ (width A) (width B))
-28
+; Multiplication and division is dependent on the input interval bounds.
 
-> (width (div-interval A B))
-0.775
+> (width (mul-interval (make-interval 0 2) (make-interval 0 10)))
+10.0
 
-> (/ (width A) (width B))
-0.5714285714285714
+> (width (mul-interval (make-interval 0 2) (make-interval 4 14)))
+14.0
+
+> (width (div-interval (make-interval 2 4) (make-interval 2 12)))
+0.9166666666666666
+
+> (width (div-interval (make-interval 2 4) (make-interval 4 14)))
+0.4285714285714286
 
 |#
 
@@ -646,9 +643,10 @@ compose function where compose f g = f (g x):
     (make-interval (- c (abs (* c tolerance)))
                    (+ c (abs (* c tolerance))))))
 
-(define (percentage-tolerance interval)
-  (let ((c (center interval)))
-    (* (/ (- (upper-bound interval) c) c) 100)))
+(define (percent interval)
+  (let ((c (center interval))
+        (w (width interval)))
+    (* (/ w c) 100)))
 
 
 #|
@@ -656,9 +654,107 @@ compose function where compose f g = f (g x):
 > (make-center-percentage -10 20)
 (mcons -12.0 -8.0)
 
-> (percentage-tolerance (make-interval 2.5 7.5))
+> (percent (make-interval 2.5 7.5))
 50.0
 
+|#
 
+
+
+#|Exercise 2.13
+
+; l, u means lower, upper respectively 
+
+p = w/c ; percentage tolerance
+w = p*c ; implied by p = w/c
+w = (u-l)/2 ; width
+c = (u+l)/2 ; center
+
+p = (u-l)/(u+l)
+
+Say we have an operation x*y = z we assume that x > 0 and y > 0,
+we can observe that:
+
+[zl, zu] = [xl, xu] * [yl, yu] = [xl*yl, xu*yu]
+
+which means zl = xl * yl and zu = xu * yu
+
+pz = (zu - zl)/(zu + zl) = (xu*yu - xl*yl)/(xu*yu + xl*yl)
+
+Using center and width:
+
+lx = cx - wx = cx - px*cx = cx(1 - px)
+ly = cy - wy = cy - py*cy = cy(1 - py)
+ux = cx + wx = cx + px*cx = cx(1 + px)
+uy = cy + wy = cy + py*cy = cy(1 + py)
+
+xl*yl = cx*cy(1 - px)(1 - py)
+xu*yu = cx*cy(1 + px)(1 + py)
+
+Using previous equation for pz, we can obtain:
+
+pz = (px + py)/(1 + px*py)
+
+For sufficiently small values of px*py, the denominator would be
+close to 1 and the fraction would be approximately px + py.
+
+|#
+
+
+(define t1 (make-center-percentage 5 0.02))
+(define t2 (make-center-percentage 13 0.01))
+
+(define t1*t2 (mul-interval t1 t2))
+
+#|
+
+> (percent t1)
+0.02000000000000668
+
+> (percent t2)
+0.010000000000004023
+
+> (percent t1*t2)
+0.029999999400012082
+
+|#
+
+#|Exercise 2.14|#
+
+(define (mul-pct-tolerance x y)
+  (+ (percent x) (percent y)))
+
+(define (par1 r1 r2)
+  (div-interval
+   (mul-interval r1 r2)
+   (add-interval r1 r2)))
+
+(define (par2 r1 r2)
+  (let ((one (make-interval 1 1)))
+    (div-interval
+     one
+     (add-interval
+      (div-interval one r1)
+      (div-interval one r2)))))
+
+#|
+
+> (par1 (make-interval 5 6) (make-interval 3 7))
+(mcons 1.153846153846154 5.25)
+
+> (par2 (make-interval 5 6) (make-interval 3 7))
+(mcons 1.875 3.230769230769231)
+
+> (div-interval (make-interval 1 1) (make-interval 3 4))
+(mcons 0.25 0.3333333333333333)
+
+> (div-interval (make-interval 3 4) (make-interval 3 4))
+(mcons 0.75 1.3333333333333333)
+
+> (div-interval (make-interval 4 4) (make-interval 4 4))
+(mcons 1.0 1.0)
+
+> (div-interval (make-interval 4 4) (make-interval 4 4.1))
+(mcons 0.9756097560975611 1.0)
 
 |#
