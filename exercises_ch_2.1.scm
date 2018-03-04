@@ -487,6 +487,7 @@ compose function where compose f g = f (g x):
 
         
 #|
+
 (define (mul-interval x y)
   (let ((p1 (* (lower-bound x)
                (lower-bound y)))
@@ -498,6 +499,7 @@ compose function where compose f g = f (g x):
                (upper-bound y))))
     (make-interval (min p1 p2 p3 p4)
                    (max p1 p2 p3 p4))))
+
 
 (define (div-interval x y)
   (mul-interval x
@@ -590,8 +592,8 @@ compose function where compose f g = f (g x):
 #|Exercise 2.10|#
 
 (define (div-interval x y)
-  (if (or (= 0 (upper-bound y))
-          (= 0 (lower-bound y)))
+  (if (= (upper-bound y)
+         (lower-bound y))
       (error "Divide by zero error (the interval spans 0)")
       (mul-interval x
                     (make-interval
@@ -601,6 +603,12 @@ compose function where compose f g = f (g x):
 #|
 
 > (div-interval (make-interval 0 0) (make-interval 3 5))
+(mcons 0 0)
+
+> (div-interval (make-interval 3 5) (make-interval 0 0))
+Divide by zero error (the interval spans 0)
+
+
 |#
 
 #|Exercise 2.11|#
@@ -628,6 +636,7 @@ compose function where compose f g = f (g x):
           (else 
            (make-interval (* x-u y-u) (* x-l y-l))))))
 
+
 #|Exercise 2.12|#
 
 (define (make-center-width c w)
@@ -638,10 +647,12 @@ compose function where compose f g = f (g x):
         (upper-bound i)) 
      2))
 
+
 (define (make-center-percentage c pct-tol)
   (let ((tolerance (/ pct-tol 100.0)))
     (make-interval (- c (abs (* c tolerance)))
                    (+ c (abs (* c tolerance))))))
+
 
 (define (percent interval)
   (let ((c (center interval))
@@ -653,6 +664,9 @@ compose function where compose f g = f (g x):
 
 > (make-center-percentage -10 20)
 (mcons -12.0 -8.0)
+
+> (make-center-percentage 3 11)
+(mcons 2.67 3.33)
 
 > (percent (make-interval 2.5 7.5))
 50.0
@@ -739,22 +753,161 @@ close to 1 and the fraction would be approximately px + py.
 
 #|
 
-> (par1 (make-interval 5 6) (make-interval 3 7))
-(mcons 1.153846153846154 5.25)
+> (center (par1 (make-center-percentage 40 2)
+                (make-center-percentage 50 5)))
+22.33150494924658
 
-> (par2 (make-interval 5 6) (make-interval 3 7))
-(mcons 1.875 3.230769230769231)
+> (percent (par1 (make-center-percentage 40 2)
+                 (make-center-percentage 50 5)))
+10.632411067193678
 
-> (div-interval (make-interval 1 1) (make-interval 3 4))
-(mcons 0.25 0.3333333333333333)
+> (center (par2 (make-center-percentage 40 2)
+                (make-center-percentage 50 5)))
+22.217277302447364
 
-> (div-interval (make-interval 3 4) (make-interval 3 4))
-(mcons 0.75 1.3333333333333333)
+> (percent (par2 (make-center-percentage 40 2)
+                 (make-center-percentage 50 5)))
+3.33489132974993
 
-> (div-interval (make-interval 4 4) (make-interval 4 4))
-(mcons 1.0 1.0)
+> (center (div-interval (make-center-percentage 40 2)
+                        (make-center-percentage 50 5)))
 
-> (div-interval (make-interval 4 4) (make-interval 4 4.1))
-(mcons 0.9756097560975611 1.0)
+0.8028070175438597
+
+> (percent (div-interval (make-center-percentage 40 2)
+                         (make-center-percentage 50 5)))
+
+6.99300699300698 ; division sums the uncertainties.
+
+We can see Lem is right, we get different results.
+
+|#
+
+#|Exercise 2.15|#
+
+#|
+
+Tests from sarabander @ https://github.com/sarabander
+
+> (define t3 (make-center-percentage 39 5))
+23.21994459833795
+
+> (define t4 (make-center-percentage 56 5))
+14.900744416873458
+
+> (center (par1 t3 t4))
+22.989473684210523
+
+> (percent (par1 t3 t4))
+14.900744416873458 
+
+> (center (par2 t3 t4))
+22.989473684210523 ; 22.99 (center is closer to actual value)
+
+> (percent (par2 t3 t4))
+4.999999999999996 ; 5% (par2 does seem to make tighter tolerances)
+
+> (center  (div-interval t3 t3))
+1.0050125313283207 ; Should be exactly 1.
+
+> (percent (div-interval t3 t3))
+9.975062344139646 ; Should be 0.
+
+> (center  (div-interval t3 t4))
+0.6999194414607949
+
+> (percent (div-interval t3 t4))
+9.975062344139646 ; Dividing adds the uncertainties
+
+We should prefer additions and reciprocals to multiplications and
+divisions seen in (percent (par1 t3 t4)) vs (percent (par2 t3 t4)):
+
+14.9% vs 5%.
+
+Eva is correct because we can see from 2.14 different operations affects
+tolerances differently:
+
+- Multiplication and division adds them.
+- Addition averages them.
+- Reciprocal preserves them.
+- Subtraction usually scales them up.
+
+Each uncertain value used in an interval computation increases the
+uncertainty of the answer.
+
+From http://wiki.drewhess.com/wiki/SICP_exercise_2.15:
+
+If its arguments r1 and/or r2 are uncertain values (i.e., they have
+non-zero width), par1 will produce an overly pessimistic error bound
+for the computed parallel resistance because it uses the uncertain
+values r1 and r2 twice each in two different computations.
+
+By treating each distinct use of r1 and r2 in the computation as
+distinct uncertain values, par1 overcompensates. The two distinct
+occurrences of r1 in the calculation refer to one actual resistor,
+not two resistors with the same uncertainty. Stated another way,
+the value that r1 may take is somewhere within its interval, but
+whatever value it does take, it's the same value for both occurrences
+of r1 in the procedure. The interval arithmetic system we've devised
+doesn't have a way of communicating that the uncertainty of any given
+value should only be accounted for once in the computation.
+
+By using the values of r1 and r2 only once each in its computation,
+procedure par2 does not overcompensate for the range of uncertainty
+of these values. Each value's uncertainty is introduced into the
+calculation only once. par2 does use the interval one in several
+places, but this interval has zero uncertainty, so repeated uses
+of one don't add any uncertainty to the computation.
+
+Whether the fact that par2 produces tighter error bounds makes par2
+qualitatively "better" than par1 is a matter of judgement, and
+depends at least partially on the application.
+
+
+|#
+
+
+#|Exercise 2.16
+
+Need to come back to this later.
+
+See: https://en.wikipedia.org/wiki/Interval_arithmetic#Dependency_problem
+
+From http://wiki.drewhess.com/wiki/SICP_exercise_2.16:
+
+In the interval arithmetic system we've defined, some of the laws of algebra that
+we're accustomed to don't apply to certain operations, so algebraic
+expressions that are equivalent in a non-interval arithmetic system
+are not necessarily equivalent in an interval arithmetic system.
+
+For example, consider the distributive law. The distributive law states that
+
+a(b+c) = ab+ac
+
+but this law does not universally apply in our interval arithmetic system. Here's an example:
+|#
+
+(define a (make-interval 2 4))
+ 
+(define b (make-interval -2 0))
+ 
+(define c (make-interval 3 8))
+ 
+(define t5 (mul-interval a
+                        (add-interval b c)))
+ 
+(define t6 (add-interval (mul-interval a b)
+                        (mul-interval a c)))
+
+#|
+
+> (lower-bound t5)
+2
+> (upper-bound t5)
+32
+> (lower-bound t6)
+-2
+> (upper-bound t6)
+32
 
 |#
