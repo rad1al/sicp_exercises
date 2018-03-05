@@ -97,3 +97,40 @@ one-through-four
 (1 3 5 7 1 4 9 16 25)
 
 |#
+
+#|Mapping over lists|#
+
+
+#|
+
+(define (scale-list items factor)
+  (if (null? items)
+      nil
+      (cons (* (car items) factor)
+            (scale-list (cdr items) factor))))
+
+> (display (scale-list (list 1 2 3 4 5) 10))
+(10 20 30 40 50)
+
+|#
+
+(define (map proc items)
+  (if (null? items)
+      nil
+      (cons (proc (car items))
+            (map proc (cdr items)))))
+
+
+#|
+
+> (display (map abs (list -10 2.5 -11.6 17)))
+(10 2.5 11.6 17)
+
+> (display (map (lambda (x) (* x x)) (list 1 2 3 4)))
+(1 4 9 16)
+
+|#
+
+(define (scale-list items factor)
+  (map (lambda (x) (* x factor))
+       items))
