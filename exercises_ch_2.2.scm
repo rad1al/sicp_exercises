@@ -344,3 +344,223 @@ The interpretation of this as a tree:
 (1 2 3 4 5 6 7 8 9)
 
 |#
+
+#|Exercise 2.29|#
+
+#|
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+|#
+
+(define (make-mobile left right)
+  (cons left right))
+
+(define (make-branch length structure)
+  (cons length structure))
+
+(define (left-branch mobile)
+  (car mobile))
+
+#|
+(define (right-branch mobile)
+  (car (cdr mobile)))
+|#
+
+(define (right-branch mobile)
+  (cdr mobile))
+
+(define (is-mobile? structure)
+  (pair? structure))
+
+(define (branch-length branch)
+  (car branch))
+
+#|
+(define (branch-structure branch)
+  (car (cdr branch)))
+|#
+
+(define (branch-structure branch)
+  (cdr branch))
+
+(define (total-weight mobile)
+  (+ (branch-weight (left-branch mobile))
+     (branch-weight (right-branch mobile))))
+
+(define (branch-weight branch)
+  (let ((bs (branch-structure branch)))
+    (if (is-mobile? bs)
+        (total-weight bs)
+        bs)))
+
+#|
+
+> (total-weight '((1 2) (3 ((4 5) (6 7)))))
+(+ (branch-weight '(1 2)) (branch-weight '(3 ((4 5) (6 7)))))
+(+ 2 (total-weight '((4 5) (6 7))))
+(+ 2 (+ (branch-weight '(4 5)) (branch-weight '(6 7))))
+(+ 2 (+ 5 7))
+(+ 2 12)
+14
+
+|#
+
+(define (branch-torque branch)
+  (let ((bs (branch-structure branch)))
+    (if (is-mobile? bs)
+        (* (branch-length branch)
+           (total-weight bs))
+        (* (branch-length branch)
+           (branch-weight branch)))))
+
+(define (balanced? mobile)
+  (let ((m-brnch-l (left-branch mobile))
+        (m-brnch-r (right-branch mobile)))
+    (and (= (branch-torque m-brnch-l)
+            (branch-torque m-brnch-r))
+         (if (is-mobile? (branch-structure m-brnch-l))
+             (balanced? (branch-structure m-brnch-l))
+             #t)
+         (if (is-mobile? (branch-structure m-brnch-r))
+             (balanced? (branch-structure m-brnch-r))
+             #t))))
+
+(define test-mobile1
+  (make-mobile (make-branch 4 6)
+	       (make-branch 3 8)))
+
+(define test-mobile2
+  (make-mobile (make-branch 13 5)
+	       (make-branch 5 test-mobile1)))
+
+(define test-mobile3
+  (make-mobile (make-branch 7 6)
+	       (make-branch 3 test-mobile1)))
+
+#|
+
+> (total-weight test-mobile1)
+14
+
+> (total-weight test-mobile2)
+19
+
+> (total-weight test-mobile3)
+20
+
+> (balanced? test-mobile1) 
+#t
+
+> (balanced? test-mobile2) 
+#f
+
+> (balanced? test-mobile3) 
+#t
+
+Part 4: If we change the representation of mobiles to use cons
+instead of list, we simply need to change right-branch and
+branch-structure to invoke only (cdr _) instead of (car (cdr _)).
+
+|#
+
+#|Exercise 2.30|#
+
+
+(define (square-tree tree)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (square tree)) ; square defined earlier
+        (else (cons (square-tree (car tree))
+                    (square-tree (cdr tree))))))
+
+#|
+
+
+> (square-tree '(1 (2 (3 4) 5) (6 7)))
+(cons (square-tree 1) (square-tree '((2 (3 4) 5) (6 7))
+(cons 1 (cons (square-tree '(2 (3 4) 5)) (square-tree '((6 7)))))
+(cons 1 (cons (cons (square-tree 2) (square-tree '((3 4) 5)))
+              (cons (square-tree '(6 7)) (square-tree '()))))
+(cons 1 (cons (cons 4
+                    (cons (square-tree '(3 4)) (square-tree '(5)))
+              (cons (cons (square-tree 6) (square-tree '(7)) nil)))
+(cons 1 (cons (cons 4
+                    (cons '(9 16) '(25)))
+              (cons (cons 36 '(49)) nil)))
+(cons 1 (cons (cons 4 '((9 16) 25))
+              (cons '(36 49) nil)))
+(cons 1 (cons '(4 (9 16) 25)
+              '((36 49))))
+(cons 1 '((4 (9 16) 25) (36 49)))
+(1 (4 (9 16) 25) (36 49))
+
+;;; using map procedure:
+
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (square-tree sub-tree)
+             (* sub-tree sub-tree)))
+       tree))
+
+|#
+
+#|Exercise 2.31|#
+
+(define (square-tree* tree)
+  (tree-map square tree))
+
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (tree-map proc sub-tree)
+             (proc sub-tree)))
+       tree))
+
+#|Exercise 2.32|#
+
+(define (subsets s)
+  (define (attach-s-head-to x)
+    (cons (car s) x))
+    ;(lambda (x) (cons (car s) x)) 
+  (if (null? s)
+      (list nil)
+      (let ((rest (subsets (cdr s))))
+        (append rest (map attach-s-head-to rest)))))
+
+#|
+
+We need to make sure the subsets procedure works for the simplest
+cases - 0 and 1 element lists. We notice from the function template
+that it would be helpful to append the head of our input to every
+element in our previous/one-step-smaller result:
+
+> (subsets '())
+(())
+
+> (subsets '(3))
+(append (subsets '()) (map attach-3-to (subsets '()))
+(append '(()) (map attach-3-to '(())))
+(append '(()) '((3)))
+(() (3))
+
+> (subsets '(2 3))
+(append (subsets '(3))
+        (map attach-2-to (subsets '(3))))
+(append '(() (3)) (map attach-2-to '(() (3))))
+(append '(() (3)) '((2) (2 3)))
+(() (3) (2) (2 3))
+
+> (subsets '(1 2 3))
+(append rest (map append-1-to rest))
+(append (subsets '(2 3)) (map attach-1-to (subsets '(2 3))))
+(append '(() (3) (2) (2 3))
+        (map attach-1-to '(() (3) (2) (2 3)))
+(append '(() (3) (2) (2 3))
+        '((1) (1 3) (1 2) (1 2 3)))
+(() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+
+|#
+

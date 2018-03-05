@@ -134,3 +134,54 @@ one-through-four
 (define (scale-list items factor)
   (map (lambda (x) (* x factor))
        items))
+
+#|2.2.2 - Hierarchical Structures|#
+
+(define x (cons (list 1 2) (list 3 4)))
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+
+#|
+
+(length x)
+3
+
+(count-leaves x)
+4
+
+|#
+
+#|Mapping over trees|#
+
+
+
+#|
+
+(define (scale-tree tree factor)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (* factor tree))
+        (else (cons (scale-tree (car tree) factor)
+                    (scale-tree (cdr tree) factor)))))
+
+> (display (scale-tree (list 1
+                             (list 2 (list 3 4) 5) 
+                             (list 6 7))
+                       10))
+
+(10 (20 (30 40) 50) (60 70))
+
+|#
+
+;;; using map procedure:
+
+(define (scale-tree tree factor)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (scale-tree sub-tree factor)
+             (* factor sub-tree)))
+       tree))
+
