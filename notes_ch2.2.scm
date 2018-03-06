@@ -185,3 +185,195 @@ one-through-four
              (* factor sub-tree)))
        tree))
 
+#|Sequences as Conventional Interfaces|#
+
+(define (square x) (* x x))
+
+
+
+#|
+
+(define (sum-odd-squares tree)
+  (cond ((null? tree) 0)
+        ((not (pair? tree))
+         (if (odd? tree) (square tree) 0))
+        (else (+ (sum-odd-squares
+                  (car tree))
+                 (sum-odd-squares
+                  (cdr tree))))))
+
+> (sum-odd-squares '(9 ((3 4) 5)))
+115
+
+|#
+
+(define (fib n)
+  (define (fib-iter a b n)
+    (if (= n 0)
+        a
+        (fib-iter b (+ a b) (- n 1) )))
+  (fib-iter 0 1 n))
+
+#|
+
+(define (even-fibs n)
+  (define (next k)
+    (if (> k n)
+        nil
+        (let ((f (fib k)))
+          (if (even? f)
+              (cons f (next (+ k 1)))
+              (next (+ k 1))))))
+  (next 0))
+
+> (display (even-fibs 10))
+(0 2 8 34)
+
+|#
+
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+        ((predicate (car sequence))
+         (cons (car sequence)
+               (filter predicate
+                       (cdr sequence))))
+        (else  (filter predicate
+                       (cdr sequence)))))
+
+#|
+
+> (display (filter odd? '(1 2 3 4 5)))
+(1 3 5)
+
+|#
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op
+                      initial
+                      (cdr sequence)))))
+
+#|
+
+> (display (accumulate + 0 '(1 2 3 4 5)))
+15
+
+> (display (accumulate * 1 '(1 2 3 4 5)))
+120
+
+> (display (accumulate cons nil '(1 2 3 4 5)))
+(1 2 3 4 5)
+
+|#
+
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low
+            (enumerate-interval
+             (+ low 1)
+             high))))
+
+#|
+
+> (display (enumerate-interval 2 7))
+(2 3 4 5 6 7)
+
+|#
+
+(define (enumerate-tree tree)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (list tree))
+        (else (append
+               (enumerate-tree (car tree))
+               (enumerate-tree (cdr tree))))))
+
+#|
+
+> (enumerate-tree (list 1 (list 2 (list 3 4)) 5))
+(enumerate-tree '(1 (2 (3 4)) 5))
+(append (enumerate-tree 1)
+        (enumerate-tree '((2 (3 4)) 5))
+(append '(1) (append (enumerate-tree '(2 (3 4)))
+                     (enumerate-tree 5)))
+(append '(1)
+ (append
+  (append (enumerate-tree 2) (enumerate-tree '(3 4)))
+  '(5)))
+(append '(1)
+ (append
+  (append '(2) (append '(3) (enumerate-tree '(4))))
+  '(5)))
+(append '(1)
+ (append
+  (append '(2) (append '(3) '(4)))
+  '(5)))
+(append '(1)
+ (append (append '(2) '(3 4)) '(5)))
+(append '(1) (append '(2 3 4) '(5)))
+(append '(1) '(2 3 4 5))
+(1 2 3 4 5)
+
+|#
+
+(define (sum-odd-squares tree)
+  (accumulate
+   +
+   0
+   (map square
+        (filter odd? (enumerate-tree tree)))))
+
+#|
+
+> (sum-odd-squares '(9 ((3 4) 5)))
+115
+
+|#
+
+(define (even-fibs n)
+  (accumulate
+   cons
+   nil
+   (filter even?
+           (map fib
+                (enumerate-interval 0 n)))))
+
+#|
+
+> (display (even-fibs 10))
+(0 2 8 34)
+
+|#
+
+(define (list-fibs-squares n)
+  (accumulate
+   cons
+   nil
+   (map square
+        (map fib
+             (enumerate-interval 0 n)))))
+
+#|
+
+> (display (list-fib-squares 10))
+
+|#
+
+(define
+  (product-of-squares-of-odd-elements
+   sequence)
+  (accumulate
+   *
+   1
+   (map square (filter odd? sequence))))
+
+#|
+
+> (display
+   (product-of-squares-of-odd-elements
+    (list 1 2 3 4 5)))
+225
+
+|#
