@@ -377,3 +377,108 @@ one-through-four
 225
 
 |#
+
+#|Nested Mappings
+
+(accumulate
+    append
+    nil
+    (map (lambda (i)
+           (map (lambda (j)
+                  (list i j))
+                (enumerate-interval* 1 (- i 1))))
+         (enumerate-interval* 1 n)))
+
+|#
+
+;;; procedures to find primes:
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) 
+         n)
+        ((divides? test-divisor n) 
+         test-divisor)
+        (else (find-divisor 
+               n 
+               (+ test-divisor 1)))))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (if (= n 1)
+      #f
+      (= n (smallest-divisor n))))
+
+;;; flatmap, prime-sum?, make-pair-sum:
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair)
+        (cadr pair)
+        (+ (car pair) (cadr pair))))
+
+#|
+
+> (prime-sum? '(1 2))
+#t
+
+> (display (make-pair-sum '(3 4)))
+(3 4 7)
+
+> (display (flatmap identity '((1) (2) (3))))
+(1 2 3)
+
+|#
+
+;;; prime-sum-pairs:
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter
+        prime-sum?
+        (flatmap
+         (lambda (i)
+           (map (lambda (j)
+                  (list i j))
+                (enumerate-interval
+                 1
+                 (- i 1))))
+         (enumerate-interval 1 n)))))
+
+#|
+
+> (display (prime-sum-pairs 6))
+((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7) (6 1 7) (6 5 11))
+
+|#
+
+(define (permutations s)
+  (if (null? s)
+      (list nil)
+      (flatmap (lambda (x)
+                 (map (lambda (p)
+                        (cons x p))
+                      (permutations
+                       (remove x s))))
+               s)))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
+
+#|
+
+> (display (permutations '(1 2 3)))
+((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1))
+
+|#
+

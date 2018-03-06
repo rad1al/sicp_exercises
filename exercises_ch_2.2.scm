@@ -574,11 +574,11 @@ element in our previous/one-step-smaller result:
                       initial
                       (cdr sequence)))))
 
+#|
+
 (define (map p sequence)
   (accumulate (lambda (x y) (cons (p x) y))
               nil sequence))
-
-#|
 
 > (map square '(1 2 3))
 (accumulate (lambda (x y) (cons (p x) y)) nil '(1 2 3))
@@ -730,5 +730,259 @@ to the next term.
 
 > (accumulate-n + 0 s)
 (22 26 30)
+
+|#
+
+#|Exercise 2.37|#
+
+(define m '((1 2 3 4) (4 5 6 6) (6 7 8 9)))
+
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+#|
+
+> (map * '(1 2 3) '(4 5 6))
+(4 10 18)
+
+> (dot-product '(1 2 3) '(4 5 6))
+32
+
+|#
+
+(define A '((1 -1 2) (0 -3 1)))
+
+(define b '(2 1 0))
+
+
+(define (matrix-*-vector m v)
+  (map (lambda (w) (dot-product v w)) m))
+
+#|
+
+> (display (matrix-*-vector A b))
+(1 -3)
+
+|#
+
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+
+#|
+
+> (display (transpose Y))
+((0 1) (1 -1) (2 3))
+
+|#
+
+(define X '((0 4 -2) (-4 -3 0)))
+
+(define Y '((0 1) (1 -1) (2 3)))
+
+#|
+(define (matrix-*-matrix m n)
+  (map (lambda (v)
+         (map (lambda (w)
+                (dot-product v w)) m))
+       (transpose n)))
+|#
+
+;;; Better definition:
+
+(define (matrix-*-matrix m n)
+  (let ((n-columns (transpose n)))
+    (map (lambda (m-row)
+           (matrix-*-vector n-columns m-row))
+         m)))
+
+#|
+
+> (display (matrix-*-matrix X Y))
+((0 -3) (-10 -1))
+
+|#
+
+#|Exercise 2.38
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op
+                      initial
+                      (cdr sequence)))))
+
+|#
+
+(define (fold-right op initial sequence)
+  (accumulate op initial sequence))
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+#|
+
+> (fold-right / 1 (list 1 2 3))
+1.5 ; (/ 1 (/ 2 (/ 3 1)))
+
+> (fold-left  / 1 (list 1 2 3))
+1/6 ; (/ (/ (/ 1 1) 2) 3)
+
+> (fold-right list nil (list 1 2 3))
+(list 1 (list 2 (list 3 nil)))
+(1 (2 (3 ()))
+
+> (fold-left  list nil (list 1 2 3))
+(list (list (list nil 1) 2) 3)
+(((() 1) 2) 3)
+
+(op result (car rest)) should be equivalent to
+(op (car rest) result) implying it must be commutative and
+associative:
+
+Using + for op:
+fold-right: a + 0
+fold-left:  0 + a
+
+Using + for op
+fold-right: a + (b + 0)
+fold-left: (a + b) + 0
+
+|#
+
+#|Exercise 2.39|#
+
+(define (reverse* sequence)
+  (fold-right
+   (lambda (x y) (append y (list x))) nil sequence))
+
+(define (reverse** sequence)
+  (fold-left
+   (lambda (x y) (cons y x)) nil sequence))
+
+#|
+
+> (display (reverse* '(1 2 3)))
+(3 2 1)
+
+> (display (reverse** '(1 2 3)))
+(3 2 1)
+
+|#
+
+#|Exercise 2.40|#
+
+;;; procedures to find primes:
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) 
+         n)
+        ((divides? test-divisor n) 
+         test-divisor)
+        (else (find-divisor 
+               n 
+               (+ test-divisor 1)))))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (if (= n 1)
+      #f
+      (= n (smallest-divisor n))))
+
+;;; filter, enumerate-interval
+
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+        ((predicate (car sequence))
+         (cons (car sequence)
+               (filter predicate
+                       (cdr sequence))))
+        (else  (filter predicate
+                       (cdr sequence)))))
+
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low
+            (enumerate-interval
+             (+ low 1)
+             high))))
+
+;;; flatmap, prime-sum?, make-pair-sum:
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair)
+        (cadr pair)
+        (+ (car pair) (cadr pair))))
+
+#|
+
+> (prime-sum? '(1 2))
+#t
+
+> (display (make-pair-sum '(3 4)))
+(3 4 7)
+
+> (display (flatmap identity '((1) (2) (3))))
+(1 2 3)
+
+|#
+
+;;; prime-sum-pairs:
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter
+        prime-sum?
+        (flatmap
+         (lambda (i)
+           (map (lambda (j)
+                  (list i j))
+                (enumerate-interval
+                 1
+                 (- i 1))))
+         (enumerate-interval 1 n)))))
+
+#|
+
+> (display (prime-sum-pairs 6))
+((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7) (6 1 7) (6 5 11))
+
+|#
+
+(define (permutations s)
+  (if (null? s)
+      (list nil)
+      (flatmap (lambda (x)
+                 (map (lambda (p)
+                        (cons x p))
+                      (permutations
+                       (remove x s))))
+               s)))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
+
+#|
+
+> (display (permutations '(1 2 3)))
+((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1))
 
 |#
