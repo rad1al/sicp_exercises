@@ -942,8 +942,6 @@ fold-left: (a + b) + 0
 > (display (flatmap identity '((1) (2) (3))))
 (1 2 3)
 
-|#
-
 ;;; prime-sum-pairs:
 
 (define (prime-sum-pairs n)
@@ -958,8 +956,6 @@ fold-left: (a + b) + 0
                  1
                  (- i 1))))
          (enumerate-interval 1 n)))))
-
-#|
 
 > (display (prime-sum-pairs 6))
 ((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7) (6 1 7) (6 5 11))
@@ -986,3 +982,161 @@ fold-left: (a + b) + 0
 ((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1))
 
 |#
+
+(define (unique-pairs n)
+  (flatmap
+   (lambda (x)
+    (map (lambda (y) (list x y))
+         (enumerate-interval 1 (- x 1))))
+   (enumerate-interval 1 n)))
+
+#|
+
+> (display (unique-pairs 3))
+((2 1) (3 1) (3 2))
+
+|#
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum?
+               (unique-pairs n))))
+
+#|
+
+> (display (prime-sum-pairs 6))
+((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7) (6 1 7) (6 5 11))
+
+|#
+
+#|Exercise 2.42|#
+
+(define (triples-to-s s)
+  (flatmap
+   (lambda (x)
+     (flatmap
+      (lambda (y)
+        (map
+         (lambda (z) (list x y z))
+         (enumerate-interval 1 (- y 1))))
+      (enumerate-interval 1 (- x 1))))
+   (enumerate-interval 1 s)))
+
+(define (check-if-sum-to-s t s)
+  (if (= s (accumulate + 0 t))
+      #t
+      #f))
+
+(define (ordered-triples-which-sum-to-s
+         n
+         s)
+  (filter
+   (lambda (t) (check-if-sum-to-s t s))
+   (triples-to-s n)))
+
+#|
+
+> (display (triples-to-s 2))
+((1 1 1) (1 1 2) (1 2 1) (1 2 2) (2 1 1) (2 1 2) (2 2 1) (2 2 2))
+
+> (display (ordered-triples-which-sum-to-s 3 6))
+((3 2 1))
+
+> (display (ordered-triples-which-sum-to-s 10 10))
+((5 3 2) (5 4 1) (6 3 1) (7 2 1))
+
+|#
+
+#|Exercise 2.42|#
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions)
+           (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position
+                    new-row
+                    k
+                    rest-of-queens))
+                 (enumerate-interval
+                  1
+                  board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+(define (adjoin-position row k rest-of-queens)
+  (cons (list row k) rest-of-queens))
+
+(define empty-board
+  '())
+
+;;; human-readable implementation of safe?:
+
+(define (safe? col-k positions)
+  (let ((current-queen (car positions))
+        (rest-of-queens (cdr positions)))
+    (let ((row-k (car current-queen)))
+      (null? (filter
+              (lambda (position)
+                (let ((row (car position))
+                      (col (cadr position)))
+                  (or (= row row-k) ; check if queen on same row as kth queen
+                      (= col col-k) ; check if queen on same column as kth queen
+                      (= (abs (- row row-k)) ; check if queen is on same diagonal
+                         (abs (- col col-k)))))) ; as kth queen i.e. (5,4) vs (3,6)
+             rest-of-queens)))))
+
+
+
+#|
+
+> (display (queens 4))
+(((3 4) (1 3) (4 2) (2 1)) ((2 4) (4 3) (1 2) (3 1)))
+
+> (display (length (queens 8)))
+92
+
+> (display (car (queens 8)))
+((4 8) (2 7) (7 6) (3 5) (6 4) (8 3) (5 2) (1 1))
+
+|#
+
+#|Exercise 2.43
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions)
+           (safe? k positions))
+         (flatmap
+          (lambda (new-row)
+            (map (lambda (rest-of-queens)
+                   (adjoin-position
+                    new-row
+                    k
+                    rest-of-queens))
+                 (queen-cols (- k 1))))
+          (enumerate-interval 1 board-size)))))
+  (queen-cols board-size))
+
+> (display (queens 4))
+(((2 4) (4 3) (1 2) (3 1)) ((3 4) (1 3) (4 2) (2 1)))
+
+Switching the order of the nested mappings will cause
+queens-cols to be re-evaluated for every element in
+(enumerate-interval 1 board-size) so we duplicate our
+work N times where N = board-size for each recursion level.
+
+As there are N recursion levels so we will end up dupliating
+the work N^N times. So for a board of size 8, and T time to
+solve that n-queens problem, it will take (8^8)*T time to run.  
+
+|#
+
