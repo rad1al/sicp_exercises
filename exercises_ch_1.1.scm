@@ -81,19 +81,12 @@
   (/ (+ x y) 2))
 
 (define (good-enough? guess x)
-  (= (abs (- (square guess) x)) 0.0)) ;Attempt to make epsilon/tolerance equal to 0.0
+  ;(<= (/ (abs (- (square guess) x)) (square guess)) 0.0001))
+  (< (abs (/ (- (square guess) x) (square guess))) 0.0001))
 
 (define (sqrt x)
-  (sqrt-iter 1.0 x))
-
-
-; For very small inputs of x, the tolerance of 0.001 may allow the approximation
-; to end prematurely early and give an inaccurate result.
-; For very large numbers, the procedure make take a very long time to evaluate
-; or possibly never finish if the input value is greater than the maximum
-; floating point precision.
-; (sqrt 1e+32) => 1e+16
-; (sqrt 1e+64) => runs forever
+  (if (= x 0) 0
+  (sqrt-iter 1.0 x)))
 
 #|Exercise 1.8|#
 
