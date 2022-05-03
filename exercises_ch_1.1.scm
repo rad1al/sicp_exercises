@@ -81,7 +81,6 @@
   (/ (+ x y) 2))
 
 (define (good-enough? guess x)
-  ;(<= (/ (abs (- (square guess) x)) (square guess)) 0.0001))
   (< (abs (/ (- (square guess) x) (square guess))) 0.0001))
 
 (define (sqrt x)
