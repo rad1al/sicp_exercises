@@ -39,10 +39,10 @@
   ((if (> b 0) + -) a b))  ;subtract b from a, which is essentially adding the absolute value of b to a.
 
 #|Exercise 1.5|#
-(define (p) (p))   ;With an applicative-order evaluation, the x is substituted with 0, causing the predicate expression
-                   ;to evaluate to #t making the conditional expression evaluates to 0.
-(define (test x y) ;With a normal-order evaluation, (p) would be evaluated causing an infinite recursive loop, making sure
-  (if (= x 0)      ;the program will never terminate.
+(define (p) (p))   ;With an applicative-order evaluation, (p) would be evaluated causing an infinite recursive loop, making sure
+                   ;the program will never terminate.
+(define (test x y) ;With a normal-order evaluation, the expression is expanded and x is substituted with 0, causing the predicate expression 
+  (if (= x 0)      ;to evaluate to #t making the conditional expression evaluate to 0.
       0            
       y))
 
